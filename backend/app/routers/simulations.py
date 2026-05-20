@@ -111,7 +111,7 @@ async def clarify_simulation(simulation_id: uuid.UUID, body: ClarifyRequest, db:
 
 # ── Step 3: scenario generation ───────────────────────────────────────────────
 
-@router.post("/{simulation_id}/scenarios", response_model=ScenariosResponse)
+@router.post("/{simulation_id}/scenarios", response_model=ScenariosResponse, status_code=201)
 async def generate_scenarios(simulation_id: uuid.UUID, db: DB):
     sim = await _get_simulation_or_404(db, simulation_id)
     if not sim.use_case_brief:

@@ -1,61 +1,66 @@
 """
-Thin async wrapper around the google-generativeai SDK.
-The SDK is synchronous — all calls are offloaded to a thread pool
-to avoid blocking the FastAPI event loop.
+Async wrapper around the google-genai SDK (REST-based, replaces deprecated google-generativeai).
+All generate_content calls are offloaded to a thread pool so they don't block FastAPI's event loop.
 """
 import asyncio
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+from google import genai
+from google.genai import types
 
 from app.config import settings
 
 _executor = ThreadPoolExecutor(max_workers=4)
+_client: genai.Client | None = None
 
 
-def _init_model() -> genai.GenerativeModel:
-    genai.configure(api_key=settings.google_api_key)
-    return genai.GenerativeModel(
-        model_name=settings.gemini_model,
-        generation_config=GenerationConfig(
-            response_mime_type="application/json",
-            temperature=0.3,
-            max_output_tokens=8192,
-        ),
+def get_client() -> genai.Client:
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=settings.google_api_key)
+    return _client
+
+
+def _make_config(temperature: float = 0.3) -> types.GenerateContentConfig:
+    return types.GenerateContentConfig(
+        response_mime_type="application/json",
+        temperature=temperature,
+        max_output_tokens=8192,
     )
 
 
-_model: genai.GenerativeModel | None = None
-
-
-def get_model() -> genai.GenerativeModel:
-    global _model
-    if _model is None:
-        _model = _init_model()
-    return _model
-
-
 def _strip_fences(text: str) -> str:
-    """Remove markdown code fences Gemini occasionally wraps around JSON."""
+    """Strip markdown code fences Gemini sometimes adds even in JSON mode."""
     text = text.strip()
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
     return text.strip()
 
 
-async def generate_json(prompt: str, retries: int = 3) -> dict | list:
-    """Call Gemini and return parsed JSON. Retries with exponential backoff."""
+def _sync_generate(prompt: str, temperature: float) -> str:
+    client = get_client()
+    response = client.models.generate_content(
+        model=settings.gemini_model,
+        contents=prompt,
+        config=_make_config(temperature),
+    )
+    return response.text
+
+
+async def generate_json(prompt: str, temperature: float = 0.3, retries: int = 3) -> dict | list:
+    """
+    Call Gemini and return parsed JSON.
+    Offloads the synchronous SDK call to a thread pool executor.
+    Retries with exponential backoff on transient errors.
+    """
     loop = asyncio.get_event_loop()
     last_exc: Exception | None = None
 
     for attempt in range(retries):
         try:
-            model = get_model()
-            response = await loop.run_in_executor(_executor, lambda: model.generate_content(prompt))
-            raw = response.text
+            raw = await loop.run_in_executor(_executor, lambda: _sync_generate(prompt, temperature))
             cleaned = _strip_fences(raw)
             return json.loads(cleaned)
         except json.JSONDecodeError as exc:
@@ -63,7 +68,6 @@ async def generate_json(prompt: str, retries: int = 3) -> dict | list:
             await asyncio.sleep(2 ** attempt)
         except Exception as exc:
             last_exc = exc
-            # Rate limit or transient error
             await asyncio.sleep(2 ** attempt)
 
     raise RuntimeError(f"Gemini call failed after {retries} attempts: {last_exc}") from last_exc

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # Gemini
     google_api_key: str = ""
-    gemini_model: str = "gemini-1.5-pro"
+    gemini_model: str = "gemini-2.5-flash"
 
     # App
     secret_key: str = "change_me_32_chars_minimum"
