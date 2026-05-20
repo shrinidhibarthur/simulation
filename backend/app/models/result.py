@@ -38,7 +38,7 @@ class Result(Base):
     kde_y_values: Mapped[list] = mapped_column(ARRAY(Numeric), nullable=False, default=list)
 
     # Beacon metrics (ported from simulation_lab_beacon_integrated.py)
-    win_probability: Mapped[float | None] = mapped_column(Numeric(5, 4), nullable=True)
+    win_probability: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 0.00–100.00
     demand_momentum: Mapped[float | None] = mapped_column(Numeric(10, 4), nullable=True)
     visibility_budget: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
 
