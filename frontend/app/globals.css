@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --abs-blue-dark:  #0051A1;
+  --abs-blue-light: #009FE3;
+  --abs-red:        #E41720;
+}
+
+body {
+  @apply bg-gray-50 text-gray-900;
+}
