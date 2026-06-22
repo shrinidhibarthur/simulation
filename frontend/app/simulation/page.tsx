@@ -41,8 +41,8 @@ export default function SimulationListPage() {
               </p>
             )}
           </div>
-          <Link href="/simulation/new">
-            <Button size="lg">+ New Simulation</Button>
+          <Link href="/intake">
+            <Button size="lg">+ New Request</Button>
           </Link>
         </div>
 
@@ -70,8 +70,8 @@ export default function SimulationListPage() {
             <p className="text-gray-400 mb-6 text-sm">
               Create your first Monte Carlo simulation to get started.
             </p>
-            <Link href="/simulation/new">
-              <Button>+ New Simulation</Button>
+            <Link href="/intake">
+              <Button>+ New Request</Button>
             </Link>
           </Card>
         )}

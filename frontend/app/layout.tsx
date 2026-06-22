@@ -27,6 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               >
                 Simulations
               </Link>
+              <Link
+                href="/intake"
+                className="bg-white text-abs-blue-dark px-4 py-1.5 rounded-full font-semibold hover:bg-gray-100 transition-colors"
+              >
+                + New Request
+              </Link>
             </div>
           </div>
         </nav>
